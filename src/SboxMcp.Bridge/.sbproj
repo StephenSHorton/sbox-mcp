@@ -1,14 +1,19 @@
 {
   "Title": "MCP Bridge",
-  "Type": "library",
-  "Org": "sbox-mcp",
-  "Ident": "sbox-mcp-bridge",
+  "Type": "tool",
+  "Org": "local",
+  "Ident": "mcp-bridge",
   "Schema": 1,
   "HasCode": true,
   "HasAssets": false,
-  "RootNamespace": "SboxMcp.Bridge",
+  "CodePath": "code",
+  "PackageReferences": [],
+  "EditorReferences": null,
   "Metadata": {
-    "Summary": "MCP Bridge for AI-powered s&box editor integration. Connects the s&box editor to an external MCP server for AI assistant control.",
-    "ProjectUrl": "https://github.com/4Steps2Heaven/sbox-mcp"
+    "CsProjName": "MCP Bridge",
+    "Summary": "MCP Bridge for AI-powered s&box editor integration.",
+    "Compiler": {
+      "RootNamespace": "SboxMcp.Bridge"
+    }
   }
 }

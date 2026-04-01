@@ -1,11 +1,8 @@
-using System;
 using System.Net.WebSockets;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using System.Threading;
-using System.Threading.Tasks;
-using Sandbox; // NOTE: s&box API - verify against your version
 
 namespace SboxMcp.Bridge;
 
@@ -37,13 +34,13 @@ public class BridgeResponse
 
 	[JsonPropertyName( "data" )]
 	[JsonIgnore( Condition = JsonIgnoreCondition.WhenWritingNull )]
-	public object? Data { get; set; }
+	public object Data { get; set; }
 
 	[JsonPropertyName( "error" )]
 	[JsonIgnore( Condition = JsonIgnoreCondition.WhenWritingNull )]
-	public string? Error { get; set; }
+	public string Error { get; set; }
 
-	public static BridgeResponse Ok( string id, object? data = null ) =>
+	public static BridgeResponse Ok( string id, object data = null ) =>
 		new() { Id = id, Success = true, Data = data };
 
 	public static BridgeResponse Fail( string id, string error ) =>
@@ -60,8 +57,8 @@ public class McpBridgeClient : IDisposable
 	private const int ReceiveBufferSize = 8192;
 
 	private readonly string _url;
-	private ClientWebSocket? _ws;
-	private CancellationTokenSource? _cts;
+	private ClientWebSocket _ws;
+	private CancellationTokenSource _cts;
 	private readonly SemaphoreSlim _sendLock = new( 1, 1 );
 	private bool _disposed;
 
@@ -104,7 +101,7 @@ public class McpBridgeClient : IDisposable
 		_ws?.Dispose();
 		_ws = null;
 
-		Log.Info( "[MCP Bridge] Disconnected." ); // NOTE: s&box API - verify against your version
+		Log.Info( "[MCP Bridge] Disconnected." );
 	}
 
 	private async Task RunConnectionLoop( CancellationToken ct )
@@ -122,13 +119,13 @@ public class McpBridgeClient : IDisposable
 			}
 			catch ( Exception ex )
 			{
-				Log.Warning( $"[MCP Bridge] Connection error: {ex.Message}" ); // NOTE: s&box API - verify against your version
+				Log.Warning( $"[MCP Bridge] Connection error: {ex.Message}" );
 			}
 
 			if ( ct.IsCancellationRequested )
 				break;
 
-			Log.Info( $"[MCP Bridge] Reconnecting in {ReconnectDelayMs}ms..." ); // NOTE: s&box API - verify against your version
+			Log.Info( $"[MCP Bridge] Reconnecting in {ReconnectDelayMs}ms..." );
 			await Task.Delay( ReconnectDelayMs, ct );
 		}
 	}
@@ -138,9 +135,9 @@ public class McpBridgeClient : IDisposable
 		_ws?.Dispose();
 		_ws = new ClientWebSocket();
 
-		Log.Info( $"[MCP Bridge] Connecting to {_url}..." ); // NOTE: s&box API - verify against your version
+		Log.Info( $"[MCP Bridge] Connecting to {_url}..." );
 		await _ws.ConnectAsync( new Uri( _url ), ct );
-		Log.Info( "[MCP Bridge] Connected to MCP server." ); // NOTE: s&box API - verify against your version
+		Log.Info( "[MCP Bridge] Connected to MCP server." );
 	}
 
 	private async Task ReceiveLoop( CancellationToken ct )
@@ -148,7 +145,7 @@ public class McpBridgeClient : IDisposable
 		var buffer = new byte[ReceiveBufferSize];
 		var messageBuffer = new System.IO.MemoryStream();
 
-		while ( _ws!.State == WebSocketState.Open && !ct.IsCancellationRequested )
+		while ( _ws.State == WebSocketState.Open && !ct.IsCancellationRequested )
 		{
 			messageBuffer.SetLength( 0 );
 			WebSocketReceiveResult result;
@@ -159,7 +156,7 @@ public class McpBridgeClient : IDisposable
 
 				if ( result.MessageType == WebSocketMessageType.Close )
 				{
-					Log.Info( "[MCP Bridge] Server closed connection." ); // NOTE: s&box API - verify against your version
+					Log.Info( "[MCP Bridge] Server closed connection." );
 					await _ws.CloseAsync( WebSocketCloseStatus.NormalClosure, "Closing", ct );
 					return;
 				}
@@ -175,24 +172,24 @@ public class McpBridgeClient : IDisposable
 
 	private async Task ProcessMessage( string json )
 	{
-		BridgeRequest? request = null;
+		BridgeRequest request = null;
 
 		try
 		{
 			request = JsonSerializer.Deserialize<BridgeRequest>( json );
 			if ( request is null )
 			{
-				Log.Warning( "[MCP Bridge] Received null or invalid message." ); // NOTE: s&box API - verify against your version
+				Log.Warning( "[MCP Bridge] Received null or invalid message." );
 				return;
 			}
 
-			Log.Info( $"[MCP Bridge] Command received: {request.Command} (id={request.Id})" ); // NOTE: s&box API - verify against your version
+			Log.Info( $"[MCP Bridge] Command received: {request.Command} (id={request.Id})" );
 			var response = await CommandRouter.Route( request );
 			await SendResponse( response );
 		}
 		catch ( Exception ex )
 		{
-			Log.Error( $"[MCP Bridge] Error processing message: {ex.Message}" ); // NOTE: s&box API - verify against your version
+			Log.Error( $"[MCP Bridge] Error processing message: {ex.Message}" );
 
 			if ( request is not null )
 			{
@@ -215,7 +212,7 @@ public class McpBridgeClient : IDisposable
 		await _sendLock.WaitAsync();
 		try
 		{
-			await _ws!.SendAsync(
+			await _ws.SendAsync(
 				new ArraySegment<byte>( bytes ),
 				WebSocketMessageType.Text,
 				endOfMessage: true,

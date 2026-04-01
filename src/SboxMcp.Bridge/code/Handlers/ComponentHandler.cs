@@ -1,9 +1,4 @@
-using System;
-using System.Collections.Generic;
-using System.Text.Json;
-using System.Threading.Tasks;
-using Sandbox; // NOTE: s&box API - verify against your version
-using Editor;  // NOTE: s&box API - verify against your version
+using SboxMcp.Bridge;
 
 namespace SboxMcp.Bridge.Handlers;
 
@@ -17,42 +12,42 @@ public static class ComponentHandler
 	/// component.list — List all components on a GameObject.
 	/// Params: { "id": "guid-string" }
 	/// </summary>
-	public static Task<object?> ListComponents( BridgeRequest request )
+	public static Task<object> ListComponents( BridgeRequest request )
 	{
 		var go = ResolveGameObject( request );
 		var list = new List<object>();
 
-		foreach ( var comp in go.Components.GetAll() ) // NOTE: s&box API - verify against your version
+		foreach ( var comp in go.Components.GetAll() )
 		{
 			list.Add( new
 			{
 				type    = comp.GetType().Name,
-				enabled = comp.Enabled, // NOTE: s&box API - verify against your version
+				enabled = comp.Enabled,
 			} );
 		}
 
-		return Task.FromResult<object?>( list );
+		return Task.FromResult<object>( list );
 	}
 
 	/// <summary>
 	/// component.get — Get a specific component's properties by type name.
 	/// Params: { "id": "guid-string", "type": "TypeName" }
 	/// </summary>
-	public static Task<object?> GetComponent( BridgeRequest request )
+	public static Task<object> GetComponent( BridgeRequest request )
 	{
 		var go       = ResolveGameObject( request );
 		var typeName = GetParam( request, "type" );
 		var comp     = FindComponentByType( go, typeName );
 
-		var props = new Dictionary<string, object?>();
+		var props = new Dictionary<string, object>();
 		try
 		{
-			var desc = TypeLibrary.GetDescription( comp.GetType() ); // NOTE: s&box API - verify against your version
-			if ( desc is not null )
+			var td = TypeLibrary.GetType( comp.GetType() );
+			if ( td is not null )
 			{
-				foreach ( var prop in desc.Properties )
+				foreach ( var prop in td.Properties )
 				{
-					try { props[prop.Name] = prop.GetValue( comp )?.ToString(); }
+					try { props[prop.Name] = prop.GetValue( comp )?.ToString() ?? ""; }
 					catch { props[prop.Name] = "<error>"; }
 				}
 			}
@@ -61,7 +56,7 @@ public static class ComponentHandler
 				// Fall back to standard reflection if TypeLibrary returns null.
 				foreach ( var prop in comp.GetType().GetProperties() )
 				{
-					try { props[prop.Name] = prop.GetValue( comp )?.ToString(); }
+					try { props[prop.Name] = prop.GetValue( comp )?.ToString() ?? ""; }
 					catch { props[prop.Name] = "<error>"; }
 				}
 			}
@@ -71,19 +66,19 @@ public static class ComponentHandler
 			props["_error"] = ex.Message;
 		}
 
-		return Task.FromResult<object?>( new
+		return Task.FromResult<object>( (object)new
 		{
 			type       = comp.GetType().Name,
-			enabled    = comp.Enabled, // NOTE: s&box API - verify against your version
+			enabled    = comp.Enabled,
 			properties = props,
 		} );
 	}
 
 	/// <summary>
-	/// component.set — Set a property on a component. Supports undo.
+	/// component.set — Set a property on a component.
 	/// Params: { "id": "guid", "type": "TypeName", "property": "PropName", "value": "value" }
 	/// </summary>
-	public static Task<object?> SetComponent( BridgeRequest request )
+	public static Task<object> SetComponent( BridgeRequest request )
 	{
 		var go       = ResolveGameObject( request );
 		var typeName = GetParam( request, "type" );
@@ -91,24 +86,15 @@ public static class ComponentHandler
 		var rawValue = GetParam( request, "value" );
 		var comp     = FindComponentByType( go, typeName );
 
-		try
+		var td = TypeLibrary.GetType( comp.GetType() );
+		if ( td is not null )
 		{
-			Editor.Undo.Push( $"Set {typeName}.{propName}" ); // NOTE: s&box API - verify against your version
-		}
-		catch
-		{
-			// Undo may not be available in all contexts; proceed without it.
-		}
-
-		var desc = TypeLibrary.GetDescription( comp.GetType() ); // NOTE: s&box API - verify against your version
-		if ( desc is not null )
-		{
-			var prop = desc.GetProperty( propName ); // NOTE: s&box API - verify against your version
+			var prop = td.Properties.FirstOrDefault( p => p.Name == propName );
 			if ( prop is null )
 				throw new KeyNotFoundException( $"Property '{propName}' not found on {typeName}" );
 
-			var converted = Convert.ChangeType( rawValue, prop.PropertyType ); // NOTE: s&box API - verify against your version
-			prop.SetValue( comp, converted ); // NOTE: s&box API - verify against your version
+			var converted = Convert.ChangeType( rawValue, prop.PropertyType );
+			prop.SetValue( comp, converted );
 		}
 		else
 		{
@@ -119,30 +105,30 @@ public static class ComponentHandler
 			prop.SetValue( comp, converted );
 		}
 
-		return Task.FromResult<object?>( new { set = true, property = propName, value = rawValue } );
+		return Task.FromResult<object>( (object)new { set = true, property = propName, value = rawValue } );
 	}
 
 	/// <summary>
 	/// component.add — Add a component to a GameObject by type name.
 	/// Params: { "id": "guid", "type": "TypeName" }
 	/// </summary>
-	public static Task<object?> AddComponent( BridgeRequest request )
+	public static Task<object> AddComponent( BridgeRequest request )
 	{
 		var go       = ResolveGameObject( request );
 		var typeName = GetParam( request, "type" );
 
-		var typeDesc = TypeLibrary.GetType( typeName ); // NOTE: s&box API - verify against your version
+		var typeDesc = TypeLibrary.GetType( typeName );
 		if ( typeDesc is null )
 			throw new TypeLoadException( $"Type not found: {typeName}" );
 
-		var comp = go.Components.Create( typeDesc.TargetType ); // NOTE: s&box API - verify against your version
-		Log.Info( $"[MCP Bridge] Added component {typeName} to {go.Name}" ); // NOTE: s&box API - verify against your version
+		var comp = go.Components.Create( typeDesc );
+		Log.Info( $"[MCP Bridge] Added component {typeName} to {go.Name}" );
 
-		return Task.FromResult<object?>( new
+		return Task.FromResult<object>( (object)new
 		{
 			added   = true,
 			type    = comp.GetType().Name,
-			enabled = comp.Enabled, // NOTE: s&box API - verify against your version
+			enabled = comp.Enabled,
 		} );
 	}
 
@@ -150,23 +136,23 @@ public static class ComponentHandler
 	/// component.remove — Remove a component by type name.
 	/// Params: { "id": "guid", "type": "TypeName" }
 	/// </summary>
-	public static Task<object?> RemoveComponent( BridgeRequest request )
+	public static Task<object> RemoveComponent( BridgeRequest request )
 	{
 		var go       = ResolveGameObject( request );
 		var typeName = GetParam( request, "type" );
 		var comp     = FindComponentByType( go, typeName );
 
-		comp.Destroy(); // NOTE: s&box API - verify against your version
-		Log.Info( $"[MCP Bridge] Removed component {typeName} from {go.Name}" ); // NOTE: s&box API - verify against your version
+		comp.Destroy();
+		Log.Info( $"[MCP Bridge] Removed component {typeName} from {go.Name}" );
 
-		return Task.FromResult<object?>( new { removed = true, type = typeName } );
+		return Task.FromResult<object>( (object)new { removed = true, type = typeName } );
 	}
 
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
 
-	private static GameObject ResolveGameObject( BridgeRequest request ) // NOTE: s&box API - verify against your version
+	private static GameObject ResolveGameObject( BridgeRequest request )
 	{
 		var id = GetParam( request, "id" );
 		if ( !Guid.TryParse( id, out var guid ) )
@@ -176,9 +162,9 @@ public static class ComponentHandler
 			?? throw new KeyNotFoundException( $"GameObject not found: {id}" );
 	}
 
-	private static Component FindComponentByType( GameObject go, string typeName ) // NOTE: s&box API - verify against your version
+	private static Component FindComponentByType( GameObject go, string typeName )
 	{
-		foreach ( var comp in go.Components.GetAll() ) // NOTE: s&box API - verify against your version
+		foreach ( var comp in go.Components.GetAll() )
 		{
 			if ( comp.GetType().Name.Equals( typeName, StringComparison.OrdinalIgnoreCase ) )
 				return comp;

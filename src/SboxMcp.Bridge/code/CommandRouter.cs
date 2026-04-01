@@ -1,7 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Threading.Tasks;
-using Sandbox; // NOTE: s&box API - verify against your version
 using SboxMcp.Bridge.Handlers;
 
 namespace SboxMcp.Bridge;
@@ -13,7 +9,7 @@ namespace SboxMcp.Bridge;
 /// </summary>
 public static class CommandRouter
 {
-	private delegate Task<object?> HandlerFunc( BridgeRequest request );
+	private delegate Task<object> HandlerFunc( BridgeRequest request );
 
 	private static readonly Dictionary<string, HandlerFunc> Handlers = new()
 	{
@@ -47,29 +43,41 @@ public static class CommandRouter
 
 	/// <summary>
 	/// Routes a request to its handler. Returns an error response for unknown commands.
-	/// All handlers are dispatched to the main thread.
+	/// Handlers are called directly — the editor main thread dispatches incoming messages.
 	/// </summary>
 	public static async Task<BridgeResponse> Route( BridgeRequest request )
 	{
 		if ( !Handlers.TryGetValue( request.Command, out var handler ) )
 		{
-			Log.Warning( $"[MCP Bridge] Unknown command: {request.Command}" ); // NOTE: s&box API - verify against your version
+			Log.Warning( $"[MCP Bridge] Unknown command: {request.Command}" );
 			return BridgeResponse.Fail( request.Id, $"Unknown command: {request.Command}" );
 		}
 
 		try
 		{
+			object data = null;
+
 			// Dispatch to main thread — s&box editor APIs must run on the main thread.
-			object? data = await GameTask.MainThread( async () => // NOTE: s&box API - verify against your version
+			var tcs = new System.Threading.Tasks.TaskCompletionSource<object>();
+			MainThread.Queue( async () =>
 			{
-				return await handler( request );
+				try
+				{
+					var result = await handler( request );
+					tcs.SetResult( result );
+				}
+				catch ( Exception ex )
+				{
+					tcs.SetException( ex );
+				}
 			} );
 
+			data = await tcs.Task;
 			return BridgeResponse.Ok( request.Id, data );
 		}
 		catch ( Exception ex )
 		{
-			Log.Error( $"[MCP Bridge] Handler error for '{request.Command}': {ex.Message}" ); // NOTE: s&box API - verify against your version
+			Log.Error( $"[MCP Bridge] Handler error for '{request.Command}': {ex.Message}" );
 			return BridgeResponse.Fail( request.Id, ex.Message );
 		}
 	}
