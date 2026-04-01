@@ -1,6 +1,6 @@
 # sbox-mcp — MCP Server for s&box
 
-[![Build](https://github.com/your-org/sbox-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/your-org/sbox-mcp/actions/workflows/build.yml)
+[![Build](https://github.com/StephenSHorton/sbox-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/StephenSHorton/sbox-mcp/actions/workflows/build.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![s&box](https://img.shields.io/badge/s%26box-editor-blue)](https://sbox.game)
 
@@ -45,7 +45,7 @@ The MCP Server exposes tools over **stdio** (consumed by AI clients like Claude 
 Clone the repository and build the server:
 
 ```bash
-git clone https://github.com/your-org/sbox-mcp.git
+git clone https://github.com/StephenSHorton/sbox-mcp.git
 cd sbox-mcp
 dotnet build sbox-mcp.sln --configuration Release
 ```
