@@ -10,11 +10,14 @@ AI-powered editor automation for the s&box game engine via the Model Context Pro
 
 ## Architecture
 
-```
-┌─────────────┐     stdio      ┌──────────────┐   WebSocket    ┌────────────────┐
-│  AI Client   │◄──────────────►│  MCP Server   │◄─────────────►│  s&box Editor   │
-│ (Claude,etc) │                │  (.NET 9)     │  :29015       │  Bridge Addon   │
-└─────────────┘                └──────────────┘                └────────────────┘
+```mermaid
+flowchart LR
+    AI["AI Client\n(Claude, etc.)"]
+    MCP["MCP Server\n(.NET 9)"]
+    Bridge["s&box Editor\nBridge Addon"]
+
+    AI <-->|stdio| MCP
+    MCP <-->|WebSocket :29015| Bridge
 ```
 
 The MCP Server exposes tools over **stdio** (consumed by AI clients like Claude Desktop). It forwards commands over a **WebSocket** connection to the Bridge Addon running inside the s&box editor, which executes them against the live scene and returns results.
