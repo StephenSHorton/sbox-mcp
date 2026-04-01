@@ -7,44 +7,89 @@ namespace SboxMcp.Bridge;
 [Dock( "Editor", "MCP Bridge", "smart_toy" )]
 public class McpBridgeDock : Widget
 {
+	public static McpBridgeDock Current { get; private set; }
+
+	public int CommandCount { get; private set; }
+
 	private McpBridgeClient _client;
-
 	private int _port = 29015;
-	private readonly List<string> _recentCommands = new();
+	private readonly List<string> _logEntries = new();
 	private const int MaxLogEntries = 50;
+	private DateTime _connectedAt;
 
-	private Label _statusLabel;
+	private Label _statusDot;
+	private Label _statusText;
+	private Label _urlLabel;
 	private Button _connectButton;
+	private Label _commandCountLabel;
+	private Label _uptimeLabel;
 	private Layout _logLayout;
 
 	public McpBridgeDock( Widget parent ) : base( parent )
 	{
+		Current = this;
+
+		MinimumSize = 200;
 		Layout = Layout.Column();
 		Layout.Margin = 8;
-		Layout.Spacing = 6;
+		Layout.Spacing = 8;
 
-		// --- Status row ---
-		var statusRow = Layout.AddRow();
-		statusRow.Spacing = 4;
-		_statusLabel = new Label( "Status: Disconnected", this );
-		statusRow.Add( _statusLabel );
+		BuildHeader();
+		BuildControls();
+		BuildStats();
+		BuildLog();
 
-		// --- Port row ---
-		var portRow = Layout.AddRow();
-		portRow.Spacing = 4;
-		new Label( "Port:", this );
+		StartClient();
+	}
+
+	private void BuildHeader()
+	{
+		var header = Layout.AddRow();
+		header.Spacing = 6;
+
+		_statusDot = new Label( "●", this );
+		_statusDot.SetStyles( "color: #e05252; font-size: 18px;" );
+		header.Add( _statusDot );
+
+		var textCol = header.AddColumn();
+		textCol.Spacing = 2;
+
+		_statusText = new Label( "Disconnected", this );
+		textCol.Add( _statusText );
+
+		_urlLabel = new Label( $"ws://localhost:{_port}", this );
+		_urlLabel.SetStyles( "color: #888888; font-size: 11px;" );
+		textCol.Add( _urlLabel );
+
+		header.AddStretchCell();
+	}
+
+	private void BuildControls()
+	{
+		var row = Layout.AddRow();
+		row.Spacing = 6;
+
+		var portLabel = new Label( "Port:", this );
+		row.Add( portLabel );
+
 		var portField = new LineEdit( this );
 		portField.Text = _port.ToString();
+		portField.MinimumWidth = 80;
+		portField.MaximumWidth = 100;
 		portField.TextEdited += v =>
 		{
 			if ( int.TryParse( v, out var p ) )
+			{
 				_port = p;
+				_urlLabel.Text = $"ws://localhost:{_port}";
+			}
 		};
-		portRow.Add( new Label( "Port:", this ) );
-		portRow.Add( portField );
+		row.Add( portField );
 
-		// --- Connect button ---
+		row.AddStretchCell();
+
 		_connectButton = new Button( "Connect", this );
+		_connectButton.Icon = "link";
 		_connectButton.Clicked = () =>
 		{
 			if ( _client != null && _client.IsConnected )
@@ -52,23 +97,48 @@ public class McpBridgeDock : Widget
 			else
 				StartClient();
 		};
-		Layout.Add( _connectButton );
+		row.Add( _connectButton );
+	}
 
-		// --- Log area ---
-		Layout.Add( new Label( "Recent Commands:", this ) );
+	private void BuildStats()
+	{
+		var statsRow = Layout.AddRow();
+		statsRow.Spacing = 12;
+
+		var cmdCol = statsRow.AddColumn();
+		cmdCol.Spacing = 2;
+		cmdCol.Add( new Label( "Commands", this ) );
+		_commandCountLabel = new Label( "0", this );
+		_commandCountLabel.SetStyles( "font-size: 18px; font-weight: bold;" );
+		cmdCol.Add( _commandCountLabel );
+
+		var uptimeCol = statsRow.AddColumn();
+		uptimeCol.Spacing = 2;
+		uptimeCol.Add( new Label( "Uptime", this ) );
+		_uptimeLabel = new Label( "--", this );
+		_uptimeLabel.SetStyles( "font-size: 18px; font-weight: bold;" );
+		uptimeCol.Add( _uptimeLabel );
+
+		statsRow.AddStretchCell();
+	}
+
+	private void BuildLog()
+	{
+		Layout.Add( new Label( "Activity Log", this ) );
+
 		var scroll = new ScrollArea( this );
 		scroll.Canvas = new Widget( this );
 		scroll.Canvas.Layout = Layout.Column();
 		_logLayout = scroll.Canvas.Layout;
-		_logLayout.Spacing = 2;
+		_logLayout.Spacing = 3;
+		_logLayout.Margin = 4;
 		Layout.Add( scroll, 1 );
-
-		// Auto-start connection when the editor loads.
-		StartClient();
 	}
 
 	public override void OnDestroyed()
 	{
+		if ( Current == this )
+			Current = null;
 		StopClient();
 		base.OnDestroyed();
 	}
@@ -77,8 +147,40 @@ public class McpBridgeDock : Widget
 	public void Frame()
 	{
 		var connected = _client != null && _client.IsConnected;
-		_statusLabel.Text = connected ? "Status: Connected" : "Status: Disconnected";
+
+		_statusDot.SetStyles( connected ? "color: #52e052; font-size: 18px;" : "color: #e05252; font-size: 18px;" );
+		_statusText.Text = connected ? "Connected" : "Disconnected";
 		_connectButton.Text = connected ? "Disconnect" : "Connect";
+		_connectButton.Icon = connected ? "link_off" : "link";
+		_commandCountLabel.Text = CommandCount.ToString();
+
+		if ( connected && _connectedAt != default )
+		{
+			var elapsed = DateTime.Now - _connectedAt;
+			_uptimeLabel.Text = elapsed.TotalHours >= 1
+				? $"{(int)elapsed.TotalHours}h {elapsed.Minutes:D2}m"
+				: $"{elapsed.Minutes}m {elapsed.Seconds:D2}s";
+		}
+		else
+		{
+			_uptimeLabel.Text = "--";
+		}
+	}
+
+	public void AddLog( string message )
+	{
+		var entry = $"[{DateTime.Now:HH:mm:ss}] {message}";
+		_logEntries.Insert( 0, entry );
+		if ( _logEntries.Count > MaxLogEntries )
+			_logEntries.RemoveAt( _logEntries.Count - 1 );
+
+		_logLayout.Clear( true );
+		foreach ( var e in _logEntries )
+		{
+			var lbl = new Label( e, this );
+			lbl.SetStyles( "font-size: 11px;" );
+			_logLayout.Add( lbl );
+		}
 	}
 
 	private void StartClient()
@@ -87,6 +189,7 @@ public class McpBridgeDock : Widget
 		var url = $"ws://localhost:{_port}";
 		_client = new McpBridgeClient( url );
 		_client.Connect();
+		_connectedAt = DateTime.Now;
 		Log.Info( $"[MCP Bridge] Client started, connecting to {url}" );
 		AddLog( $"Connecting to {url}..." );
 	}
@@ -98,19 +201,7 @@ public class McpBridgeDock : Widget
 		_client.Disconnect();
 		_client.Dispose();
 		_client = null;
+		_connectedAt = default;
 		AddLog( "Disconnected." );
-	}
-
-	private void AddLog( string message )
-	{
-		var entry = $"[{DateTime.Now:HH:mm:ss}] {message}";
-		_recentCommands.Insert( 0, entry );
-		if ( _recentCommands.Count > MaxLogEntries )
-			_recentCommands.RemoveAt( _recentCommands.Count - 1 );
-
-		// Rebuild log UI
-		_logLayout.Clear( true );
-		foreach ( var e in _recentCommands )
-			_logLayout.Add( new Label( e, this ) );
 	}
 }

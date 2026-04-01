@@ -20,6 +20,7 @@ public static class CommandRouter
 		["scene.delete"]        = r => SceneHandler.DeleteObject( r ),
 		["scene.find"]          = r => SceneHandler.FindObjects( r ),
 		["scene.set_transform"] = r => SceneHandler.SetTransform( r ),
+		["scene.hierarchy"]     = r => SceneHandler.GetHierarchy( r ),
 
 		// Component commands
 		["component.list"]   = r => ComponentHandler.ListComponents( r ),
@@ -35,6 +36,14 @@ public static class CommandRouter
 
 		// Project commands
 		["project.info"] = r => FileHandler.ProjectInfo( r ),
+
+		// Editor commands
+		["editor.get_selection"] = r => EditorHandler.HandleGetSelection( r ),
+		["editor.select"]        = r => EditorHandler.HandleSelectObject( r ),
+		["editor.undo"]          = r => EditorHandler.HandleUndo( r ),
+		["editor.redo"]          = r => EditorHandler.HandleRedo( r ),
+		["editor.save_scene"]    = r => EditorHandler.HandleSaveScene( r ),
+		["editor.screenshot"]    = r => EditorHandler.HandleScreenshot( r ),
 
 		// Execution commands
 		["execute.csharp"] = r => ExecutionHandler.ExecuteCSharp( r ),

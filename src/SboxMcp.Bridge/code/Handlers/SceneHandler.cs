@@ -117,6 +117,19 @@ public static class SceneHandler
 	}
 
 	/// <summary>
+	/// scene.hierarchy — Return the full scene hierarchy as indented text.
+	/// </summary>
+	public static Task<object> GetHierarchy( BridgeRequest request )
+	{
+		var scene = Game.ActiveScene;
+		if ( scene is null )
+			throw new InvalidOperationException( "No active scene." );
+
+		var text = EditorHandler.BuildHierarchyText( scene );
+		return Task.FromResult<object>( text );
+	}
+
+	/// <summary>
 	/// scene.set_transform — Set position/rotation/scale on a GameObject.
 	/// Params: { "id": "guid", "position"?: "x,y,z", "rotation"?: "x,y,z", "scale"?: "x,y,z" }
 	/// </summary>
