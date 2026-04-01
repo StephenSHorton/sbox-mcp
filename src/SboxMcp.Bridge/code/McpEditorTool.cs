@@ -9,7 +9,7 @@ public class McpBridgeDock : Widget
 {
 	public static McpBridgeDock Current { get; private set; }
 
-	public int CommandCount { get; private set; }
+	public int CommandCount { get; set; }
 
 	private McpBridgeClient _client;
 	private int _port = 29015;
@@ -24,6 +24,7 @@ public class McpBridgeDock : Widget
 	private Label _commandCountLabel;
 	private Label _uptimeLabel;
 	private Layout _logLayout;
+	private LineEdit _portField;
 
 	public McpBridgeDock( Widget parent ) : base( parent )
 	{
@@ -72,7 +73,8 @@ public class McpBridgeDock : Widget
 		var portLabel = new Label( "Port:", this );
 		row.Add( portLabel );
 
-		var portField = new LineEdit( this );
+		_portField = new LineEdit( this );
+		var portField = _portField;
 		portField.Text = _port.ToString();
 		portField.MinimumWidth = 80;
 		portField.MaximumWidth = 100;
@@ -146,6 +148,9 @@ public class McpBridgeDock : Widget
 	[EditorEvent.Frame]
 	public void Frame()
 	{
+		if ( !_statusDot.IsValid() || !_statusText.IsValid() || !_connectButton.IsValid() )
+			return;
+
 		var connected = _client != null && _client.IsConnected;
 
 		_statusDot.SetStyles( connected ? "color: #52e052; font-size: 18px;" : "color: #e05252; font-size: 18px;" );
@@ -153,6 +158,7 @@ public class McpBridgeDock : Widget
 		_connectButton.Text = connected ? "Disconnect" : "Connect";
 		_connectButton.Icon = connected ? "link_off" : "link";
 		_commandCountLabel.Text = CommandCount.ToString();
+		_portField.ReadOnly = connected;
 
 		if ( connected && _connectedAt != default )
 		{

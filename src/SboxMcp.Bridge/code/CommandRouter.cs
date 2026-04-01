@@ -66,6 +66,10 @@ public static class CommandRouter
 		{
 			object data = null;
 
+			// Show toast and log
+			McpCommandToast.Show( request.Command );
+			McpBridgeDock.Current?.AddLog( $"→ {request.Command}" );
+
 			// Dispatch to main thread — s&box editor APIs must run on the main thread.
 			var tcs = new System.Threading.Tasks.TaskCompletionSource<object>();
 			MainThread.Queue( async () =>
@@ -82,11 +86,25 @@ public static class CommandRouter
 			} );
 
 			data = await tcs.Task;
+
+			// Update toast and dock on success
+			McpCommandToast.Complete( request.Command, true );
+			if ( McpBridgeDock.Current != null )
+			{
+				McpBridgeDock.Current.CommandCount++;
+				McpBridgeDock.Current.AddLog( $"✓ {request.Command}" );
+			}
+
 			return BridgeResponse.Ok( request.Id, data );
 		}
 		catch ( Exception ex )
 		{
 			Log.Error( $"[MCP Bridge] Handler error for '{request.Command}': {ex.Message}" );
+
+			// Update toast and dock on failure
+			McpCommandToast.Complete( request.Command, false );
+			McpBridgeDock.Current?.AddLog( $"✗ {request.Command}: {ex.Message}" );
+
 			return BridgeResponse.Fail( request.Id, ex.Message );
 		}
 	}

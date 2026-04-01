@@ -14,7 +14,7 @@ public static class EditorHandler
 		try
 		{
 			// NOTE: s&box API - verify
-			var selected = EditorScene.GizmoInstance?.Selection?.OfType<GameObject>().ToList();
+			var selected = SceneEditorSession.Active?.Selection?.OfType<GameObject>().ToList();
 
 			if ( selected is null || selected.Count == 0 )
 				return Task.FromResult<object>( new List<object>() );
@@ -65,11 +65,11 @@ public static class EditorHandler
 		try
 		{
 			// NOTE: s&box API - verify
-			var gizmo = EditorScene.GizmoInstance;
-			if ( gizmo is not null )
+			var session = SceneEditorSession.Active;
+			if ( session is not null )
 			{
-				gizmo.Selection.Clear();
-				gizmo.Selection.Add( target );
+				session.Selection.Clear();
+				session.Selection.Add( target );
 			}
 		}
 		catch ( Exception ex )
@@ -94,7 +94,7 @@ public static class EditorHandler
 		try
 		{
 			// NOTE: s&box API - verify
-			SceneEditorSession.Active?.Undo();
+			SceneEditorSession.Active?.UndoSystem.Undo();
 			Log.Info( "[MCP Bridge] editor.undo dispatched" );
 			return Task.FromResult<object>( (object)new { success = true, action = "undo" } );
 		}
@@ -112,7 +112,7 @@ public static class EditorHandler
 		try
 		{
 			// NOTE: s&box API - verify
-			SceneEditorSession.Active?.Redo();
+			SceneEditorSession.Active?.UndoSystem.Redo();
 			Log.Info( "[MCP Bridge] editor.redo dispatched" );
 			return Task.FromResult<object>( (object)new { success = true, action = "redo" } );
 		}
@@ -130,7 +130,7 @@ public static class EditorHandler
 		try
 		{
 			// NOTE: s&box API - verify
-			SceneEditorSession.Active?.Save();
+			SceneEditorSession.Active?.Save( false );
 			Log.Info( "[MCP Bridge] editor.save_scene dispatched" );
 			return Task.FromResult<object>( (object)new { success = true, action = "save_scene" } );
 		}
@@ -146,18 +146,12 @@ public static class EditorHandler
 	/// </summary>
 	public static Task<object> HandleScreenshot( BridgeRequest request )
 	{
-		try
-		{
-			// NOTE: s&box API - verify
-			var path = $"screenshots/mcp_{System.DateTime.Now:yyyyMMdd_HHmmss}.png";
-			Screen.CreateScreenshot( path ); // NOTE: s&box API - verify
-			Log.Info( $"[MCP Bridge] editor.screenshot saved to: {path}" );
-			return Task.FromResult<object>( (object)new { success = true, path } );
-		}
-		catch ( Exception ex )
-		{
-			throw new InvalidOperationException( $"Screenshot failed: {ex.Message}", ex );
-		}
+		// TODO: Implement viewport screenshot capture via Camera.RenderToPixmap
+		// The s&box editor does not expose a simple screenshot API.
+		// A future implementation could grab the active SceneViewWidget's camera
+		// and render to a Pixmap, then save to disk.
+		Log.Info( "[MCP Bridge] editor.screenshot — not yet implemented" );
+		return Task.FromResult<object>( (object)new { success = false, error = "Screenshot not yet implemented. Use the built-in screenshot_highres console command instead." } );
 	}
 
 	// -------------------------------------------------------------------------
