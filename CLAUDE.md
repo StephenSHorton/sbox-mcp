@@ -46,6 +46,10 @@ dotnet run --project src/SboxMcp.Server
 cp -r src/SboxMcp.Bridge/code/* "/c/Program Files (x86)/Steam/steamapps/common/sbox/addons/tools/Code/McpBridge/"
 ```
 
+## Documentation
+
+Keep `README.md` up-to-date with any user-facing changes. The README is the first thing someone sees when they visit the repo. If a change adds/removes tools, modifies setup steps, changes configuration, or alters the architecture, update the README in the same commit. The tools table and setup instructions are the most common sections that need updating.
+
 ## Adding New Tools
 
 1. Add the MCP tool method in `src/SboxMcp.Server/Tools/` (use `[McpServerTool]` attribute)
