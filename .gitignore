@@ -1,0 +1,26 @@
+# .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.DotSettings
+.idea/
+
+# NuGet
+packages/
+*.nupkg
+
+# Build output
+publish/
+out/
+
+# OS files
+Thumbs.db
+.DS_Store
+desktop.ini
+
+# s&box
+.addon
+.asset.*
+compiled/
