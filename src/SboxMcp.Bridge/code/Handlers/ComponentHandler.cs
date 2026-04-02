@@ -117,7 +117,9 @@ public static class ComponentHandler
 		var go       = ResolveGameObject( request );
 		var typeName = GetParam( request, "type" );
 
-		var typeDesc = TypeLibrary.GetType( typeName );
+		var typeDesc = EditorTypeLibrary.GetType( typeName );
+		if ( typeDesc is null )
+			typeDesc = TypeLibrary.GetType( typeName );
 		if ( typeDesc is null )
 			throw new TypeLoadException( $"Type not found: {typeName}" );
 

@@ -39,25 +39,25 @@ public static class FileHandler
 		var path    = GetParam( request, "path" );
 		var content = GetParam( request, "content" );
 
-		bool wrote = false;
-		try
-		{
-			Sandbox.FileSystem.Mounted.WriteAllText( path, content );
-			wrote = true;
-		}
-		catch
-		{
-			// Fall back to System.IO.
-			var fullPath = ResolveAbsolutePath( path );
-			var dir = Path.GetDirectoryName( fullPath );
-			if ( dir is not null )
-				Directory.CreateDirectory( dir );
-			File.WriteAllText( fullPath, content );
-			wrote = true;
-		}
+		// Write to the active project directory — code files go in code/, assets in Assets/
+		var projectRoot = Project.Current?.GetRootPath();
+		if ( projectRoot is null )
+			throw new InvalidOperationException( "No active project found." );
 
-		Log.Info( $"[MCP Bridge] Wrote file: {path}" );
-		return Task.FromResult<object>( (object)new { path, written = wrote } );
+		string baseDir;
+		if ( path.EndsWith( ".cs", StringComparison.OrdinalIgnoreCase ) )
+			baseDir = Path.Combine( projectRoot, "code" );
+		else
+			baseDir = Project.Current.GetAssetsPath();
+
+		var fullPath = Path.Combine( baseDir, path );
+		var dir = Path.GetDirectoryName( fullPath );
+		if ( dir is not null )
+			Directory.CreateDirectory( dir );
+		File.WriteAllText( fullPath, content );
+
+		Log.Info( $"[MCP Bridge] Wrote file: {fullPath}" );
+		return Task.FromResult<object>( (object)new { path, written = true } );
 	}
 
 	/// <summary>
