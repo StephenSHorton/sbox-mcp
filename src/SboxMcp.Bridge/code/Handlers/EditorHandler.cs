@@ -168,7 +168,9 @@ public static class EditorHandler
 
 		try
 		{
-			var gameScene = Scene.CreateGameScene( session.Scene );
+			// SetPlaying requires a game scene — create one from the editor scene
+			var gameScene = Scene.CreateEditorScene();
+			gameScene.Load( session.Scene.Source );
 			session.SetPlaying( gameScene );
 			Log.Info( "[MCP Bridge] editor.play dispatched" );
 			return Task.FromResult<object>( (object)new { success = true, action = "play" } );
@@ -217,10 +219,10 @@ public static class EditorHandler
 		var scene = session.Scene;
 		return Task.FromResult<object>( (object)new
 		{
-			name            = scene?.Name ?? "",
-			sourcePath      = session.SourcePath ?? "",
-			hasUnsavedChanges = session.IsDirty,
-			isPlaying       = session.IsPlaying,
+			name              = scene?.Name ?? "",
+			sourcePath        = scene?.Source?.ResourcePath ?? "",
+			hasUnsavedChanges = session.HasUnsavedChanges,
+			isPlaying         = session.IsPlaying,
 		} );
 	}
 

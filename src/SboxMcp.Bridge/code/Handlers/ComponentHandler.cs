@@ -78,7 +78,7 @@ public static class ComponentHandler
 	/// component.set — Set a property on a component.
 	/// Params: { "id": "guid", "type": "TypeName", "property": "PropName", "value": "value" }
 	/// </summary>
-	public static Task<object> SetComponent( BridgeRequest request )
+	public static async Task<object> SetComponent( BridgeRequest request )
 	{
 		var go       = ResolveGameObject( request );
 		var typeName = GetParam( request, "type" );
@@ -93,7 +93,7 @@ public static class ComponentHandler
 			if ( prop is null )
 				throw new KeyNotFoundException( $"Property '{propName}' not found on {typeName}" );
 
-			var converted = Convert.ChangeType( rawValue, prop.PropertyType );
+			var converted = await ConvertValueAsync( rawValue, prop.PropertyType );
 			prop.SetValue( comp, converted );
 		}
 		else
@@ -101,11 +101,11 @@ public static class ComponentHandler
 			// Fall back to standard reflection.
 			var prop = comp.GetType().GetProperty( propName )
 				?? throw new KeyNotFoundException( $"Property '{propName}' not found on {typeName}" );
-			var converted = Convert.ChangeType( rawValue, prop.PropertyType );
+			var converted = await ConvertValueAsync( rawValue, prop.PropertyType );
 			prop.SetValue( comp, converted );
 		}
 
-		return Task.FromResult<object>( (object)new { set = true, property = propName, value = rawValue } );
+		return (object)new { set = true, property = propName, value = rawValue };
 	}
 
 	/// <summary>
@@ -151,6 +151,74 @@ public static class ComponentHandler
 	// -------------------------------------------------------------------------
 	// Helpers
 	// -------------------------------------------------------------------------
+
+	/// <summary>
+	/// Converts a raw string value to the target type, handling s&box resource types.
+	/// </summary>
+	private static async Task<object> ConvertValueAsync( string rawValue, Type targetType )
+	{
+		var typeName = targetType.Name;
+
+		// s&box resource types — must use their Load methods
+		if ( typeName == "Model" )
+		{
+			if ( rawValue.EndsWith( ".vmdl", StringComparison.OrdinalIgnoreCase ) )
+				return Model.Load( rawValue );
+			// Cloud ident — fetch, mount, then load on main thread
+			var pkg = await Package.Fetch( rawValue, true );
+			if ( pkg is not null )
+			{
+				await pkg.MountAsync();
+				var primary = pkg.GetMeta( "PrimaryAsset", "" );
+				if ( !string.IsNullOrEmpty( primary ) )
+					return Model.Load( primary );
+			}
+			throw new InvalidOperationException( $"Could not load cloud model: {rawValue}" );
+		}
+
+		if ( typeName == "Material" )
+		{
+			if ( rawValue.EndsWith( ".vmat", StringComparison.OrdinalIgnoreCase ) )
+				return Material.Load( rawValue );
+			var pkg = await Package.Fetch( rawValue, true );
+			if ( pkg is not null )
+			{
+				await pkg.MountAsync();
+				var primary = pkg.GetMeta( "PrimaryAsset", "" );
+				if ( !string.IsNullOrEmpty( primary ) )
+					return Material.Load( primary );
+			}
+			throw new InvalidOperationException( $"Could not load cloud material: {rawValue}" );
+		}
+
+		if ( typeName == "Color" )
+			return Color.Parse( rawValue ) ?? Color.White;
+
+		if ( typeName == "Vector3" )
+		{
+			var parts = rawValue.Split( ',' );
+			if ( parts.Length == 3 )
+				return new Vector3( float.Parse( parts[0].Trim() ), float.Parse( parts[1].Trim() ), float.Parse( parts[2].Trim() ) );
+		}
+
+		if ( typeName == "Angles" )
+		{
+			var parts = rawValue.Split( ',' );
+			if ( parts.Length == 3 )
+				return new Angles( float.Parse( parts[0].Trim() ), float.Parse( parts[1].Trim() ), float.Parse( parts[2].Trim() ) );
+		}
+
+		if ( targetType == typeof( bool ) )
+			return bool.Parse( rawValue );
+
+		if ( targetType == typeof( float ) )
+			return float.Parse( rawValue );
+
+		if ( targetType == typeof( int ) )
+			return int.Parse( rawValue );
+
+		return Convert.ChangeType( rawValue, targetType );
+	}
 
 	private static GameObject ResolveGameObject( BridgeRequest request )
 	{

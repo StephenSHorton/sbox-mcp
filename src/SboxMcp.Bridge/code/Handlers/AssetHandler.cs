@@ -22,19 +22,22 @@ public static class AssetHandler
 
 		try
 		{
-			var packages = await Package.FindAsync( query, take: take );
+			var findResult = await Package.FindAsync( query, take: take );
 
 			var results = new List<object>();
-			foreach ( var pkg in packages )
+			if ( findResult.Packages is not null )
 			{
-				results.Add( new
+				foreach ( var pkg in findResult.Packages )
 				{
-					ident       = pkg.FullIdent,
-					title       = pkg.Title,
-					description = pkg.Description,
-					type        = pkg.PackageType.ToString(),
-					thumb       = pkg.Thumb,
-				} );
+					results.Add( new
+					{
+						ident       = pkg.FullIdent,
+						title       = pkg.Title,
+						description = pkg.Description,
+						type        = pkg.TypeName ?? "",
+						thumb       = pkg.Thumb,
+					} );
+				}
 			}
 
 			Log.Info( $"[MCP Bridge] asset.search '{query}' -> {results.Count} results" );
@@ -66,7 +69,7 @@ public static class AssetHandler
 				ident        = pkg.FullIdent,
 				title        = pkg.Title,
 				description  = pkg.Description,
-				type         = pkg.PackageType.ToString(),
+				type         = pkg.TypeName ?? "",
 				thumb        = pkg.Thumb,
 				primaryAsset = pkg.GetMeta( "PrimaryAsset", "" ),
 			};

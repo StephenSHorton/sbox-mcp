@@ -21,16 +21,9 @@ public static class ConsoleCapture
 			return;
 		_hooked = true;
 
-		// Hook into the s&box log system if the API is available.
-		// Log.OnEntry is the standard s&box event for log messages.
-		try
-		{
-			Log.OnEntry += OnLogEntry;
-		}
-		catch ( Exception ex )
-		{
-			Log.Warning( $"[MCP Bridge] ConsoleCapture: could not hook Log.OnEntry: {ex.Message}" );
-		}
+		// s&box Logger does not expose an OnEntry event.
+		// Entries are added manually via AddEntry() from handlers.
+		Log.Info( "[MCP Bridge] ConsoleCapture initialised (manual capture mode)" );
 	}
 
 	/// <summary>
@@ -57,9 +50,4 @@ public static class ConsoleCapture
 		}
 	}
 
-	private static void OnLogEntry( string channel, LogLevel level, string message, string trace )
-	{
-		var line = $"[{level}] {message}";
-		AddEntry( line );
-	}
 }
