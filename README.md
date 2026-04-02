@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/MCP.png" alt="sbox-mcp" width="600" />
+</p>
+
 # sbox-mcp — MCP Server for s&box
 
 [![Build](https://github.com/StephenSHorton/sbox-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/StephenSHorton/sbox-mcp/actions/workflows/build.yml)
