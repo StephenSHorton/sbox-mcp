@@ -175,8 +175,17 @@ public static class AssetHandler
 	{
 		try
 		{
-			var projectPath = Project.Current?.GetProjectFile();
-			if ( projectPath is null ) return;
+			// Find .sbproj by searching the project root directory
+			var assetsPath = Project.Current?.GetAssetsPath();
+			if ( assetsPath is null ) return;
+
+			var projectDir = System.IO.Path.GetDirectoryName( assetsPath.TrimEnd( '/', '\\' ) );
+			if ( projectDir is null ) return;
+
+			var sbprojFiles = System.IO.Directory.GetFiles( projectDir, "*.sbproj" );
+			if ( sbprojFiles.Length == 0 ) return;
+
+			var projectPath = sbprojFiles[0];
 
 			var json = System.IO.File.ReadAllText( projectPath );
 			var doc = System.Text.Json.JsonDocument.Parse( json );
