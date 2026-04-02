@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Net;
 using System.Net.WebSockets;
 using System.Text;
@@ -28,7 +29,18 @@ public sealed class EditorBridgeServer : BackgroundService
     {
         var listener = new HttpListener();
         listener.Prefixes.Add($"http://localhost:{_port}/");
-        listener.Start();
+
+        try
+        {
+            listener.Start();
+        }
+        catch (HttpListenerException)
+        {
+            _logger.LogWarning("Port {Port} already in use — killing stale SboxMcp.Server process", _port);
+            KillExistingServer();
+            listener.Start();
+        }
+
         _logger.LogInformation("WebSocket server listening on http://localhost:{Port}/", _port);
 
         while (!stoppingToken.IsCancellationRequested)
@@ -122,6 +134,25 @@ public sealed class EditorBridgeServer : BackgroundService
                 tcs.TrySetResult(response);
             else
                 _logger.LogDebug("Received response for unknown id {Id}", response.Id);
+        }
+    }
+
+    private void KillExistingServer()
+    {
+        var current = Environment.ProcessId;
+        foreach (var proc in Process.GetProcessesByName("SboxMcp.Server"))
+        {
+            if (proc.Id == current) continue;
+            try
+            {
+                _logger.LogInformation("Killing stale SboxMcp.Server (PID {Pid})", proc.Id);
+                proc.Kill();
+                proc.WaitForExit(3000);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Failed to kill PID {Pid}", proc.Id);
+            }
         }
     }
 

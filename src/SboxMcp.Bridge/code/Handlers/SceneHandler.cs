@@ -17,9 +17,7 @@ public static class SceneHandler
 	/// </summary>
 	public static Task<object> ListObjects( BridgeRequest request )
 	{
-		var scene = Game.ActiveScene;
-		if ( scene is null )
-			throw new InvalidOperationException( "No active scene." );
+		var scene = GetActiveScene();
 
 		var results = new List<object>();
 		foreach ( var go in EnumerateAll( scene ) )
@@ -51,9 +49,7 @@ public static class SceneHandler
 	/// </summary>
 	public static Task<object> CreateObject( BridgeRequest request )
 	{
-		var scene = Game.ActiveScene;
-		if ( scene is null )
-			throw new InvalidOperationException( "No active scene." );
+		var scene = GetActiveScene();
 
 		var name     = GetParamOptional( request, "name" ) ?? "New GameObject";
 		var posStr   = GetParamOptional( request, "position" );
@@ -121,9 +117,7 @@ public static class SceneHandler
 	/// </summary>
 	public static Task<object> GetHierarchy( BridgeRequest request )
 	{
-		var scene = Game.ActiveScene;
-		if ( scene is null )
-			throw new InvalidOperationException( "No active scene." );
+		var scene = GetActiveScene();
 
 		var text = EditorHandler.BuildHierarchyText( scene );
 		return Task.FromResult<object>( text );
@@ -156,6 +150,19 @@ public static class SceneHandler
 		}
 
 		return Task.FromResult<object>( SerializeGameObjectShallow( go ) );
+	}
+
+	// -------------------------------------------------------------------------
+	// Scene access
+	// -------------------------------------------------------------------------
+
+	/// <summary>
+	/// Gets the scene currently open in the editor, falling back to Game.ActiveScene.
+	/// </summary>
+	private static Scene GetActiveScene()
+	{
+		return SceneEditorSession.Active?.Scene ?? Game.ActiveScene
+			?? throw new InvalidOperationException( "No active scene." );
 	}
 
 	// -------------------------------------------------------------------------
@@ -234,7 +241,7 @@ public static class SceneHandler
 	/// </summary>
 	public static GameObject FindObjectById( Guid id )
 	{
-		var scene = Game.ActiveScene;
+		var scene = SceneEditorSession.Active?.Scene ?? Game.ActiveScene;
 		if ( scene is null ) return null;
 
 		foreach ( var go in EnumerateAll( scene ) )
@@ -246,25 +253,11 @@ public static class SceneHandler
 	}
 
 	/// <summary>
-	/// Recursively enumerates all GameObjects in the scene starting from root children.
+	/// Enumerates all GameObjects in the scene using the scene directory.
 	/// </summary>
 	private static IEnumerable<GameObject> EnumerateAll( Scene scene )
 	{
-		foreach ( var child in scene.Children )
-		{
-			foreach ( var go in EnumerateRecursive( child ) )
-				yield return go;
-		}
-	}
-
-	private static IEnumerable<GameObject> EnumerateRecursive( GameObject go )
-	{
-		yield return go;
-		foreach ( var child in go.Children )
-		{
-			foreach ( var desc in EnumerateRecursive( child ) )
-				yield return desc;
-		}
+		return scene.GetAllObjects( false );
 	}
 
 	/// <summary>

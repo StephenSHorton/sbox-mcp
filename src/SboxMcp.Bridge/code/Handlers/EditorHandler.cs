@@ -45,7 +45,7 @@ public static class EditorHandler
 		if ( !Guid.TryParse( objectId, out var guid ) )
 			throw new ArgumentException( $"Invalid GUID: {objectId}" );
 
-		var scene = Game.ActiveScene; // NOTE: s&box API - verify
+		var scene = SceneEditorSession.Active?.Scene ?? Game.ActiveScene;
 		if ( scene is null )
 			throw new InvalidOperationException( "No active scene." );
 
@@ -172,7 +172,10 @@ public static class EditorHandler
 		var sb = new System.Text.StringBuilder();
 		sb.AppendLine( scene.Name ?? "Scene" );
 
-		var rootChildren = scene.Children.ToList(); // NOTE: s&box API - verify
+		var rootChildren = scene.GetAllObjects( false )
+			.Where( go => go.Parent is null && !go.Flags.HasFlag( GameObjectFlags.Hidden ) )
+			.ToList();
+
 		for ( var i = 0; i < rootChildren.Count; i++ )
 		{
 			var isLast = i == rootChildren.Count - 1;
@@ -202,21 +205,7 @@ public static class EditorHandler
 
 	private static IEnumerable<GameObject> EnumerateAll( Scene scene )
 	{
-		foreach ( var child in scene.Children )
-		{
-			foreach ( var go in EnumerateRecursive( child ) )
-				yield return go;
-		}
-	}
-
-	private static IEnumerable<GameObject> EnumerateRecursive( GameObject go )
-	{
-		yield return go;
-		foreach ( var child in go.Children )
-		{
-			foreach ( var desc in EnumerateRecursive( child ) )
-				yield return desc;
-		}
+		return scene.GetAllObjects( false );
 	}
 
 	private static string GetParam( BridgeRequest request, string key )
