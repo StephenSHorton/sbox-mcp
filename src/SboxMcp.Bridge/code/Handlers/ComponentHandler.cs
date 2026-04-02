@@ -166,11 +166,12 @@ public static class ComponentHandler
 		{
 			if ( rawValue.EndsWith( ".vmdl", StringComparison.OrdinalIgnoreCase ) )
 				return Model.Load( rawValue );
-			// Cloud ident — fetch, mount, then load on main thread
+			// Cloud ident — fetch, mount, add to project refs, then load
 			var pkg = await Package.Fetch( rawValue, true );
 			if ( pkg is not null )
 			{
 				await pkg.MountAsync();
+				AssetHandler.AddPackageReference( rawValue );
 				var primary = pkg.GetMeta( "PrimaryAsset", "" );
 				if ( !string.IsNullOrEmpty( primary ) )
 					return Model.Load( primary );
@@ -186,6 +187,7 @@ public static class ComponentHandler
 			if ( pkg is not null )
 			{
 				await pkg.MountAsync();
+				AssetHandler.AddPackageReference( rawValue );
 				var primary = pkg.GetMeta( "PrimaryAsset", "" );
 				if ( !string.IsNullOrEmpty( primary ) )
 					return Material.Load( primary );

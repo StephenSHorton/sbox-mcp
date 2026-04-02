@@ -95,6 +95,7 @@ public static class AssetHandler
 				throw new KeyNotFoundException( $"Package not found: {ident}" );
 
 			await pkg.MountAsync();
+			AddPackageReference( ident );
 
 			var primary = pkg.GetMeta( "PrimaryAsset", "" );
 			Log.Info( $"[MCP Bridge] asset.mount '{ident}' ok, primaryAsset={primary}" );
@@ -159,6 +160,54 @@ public static class AssetHandler
 		catch ( Exception ex )
 		{
 			throw new InvalidOperationException( $"asset.browse_local failed: {ex.Message}", ex );
+		}
+	}
+
+	// -------------------------------------------------------------------------
+	// Project reference helpers
+	// -------------------------------------------------------------------------
+
+	/// <summary>
+	/// Adds a package ident to the project's PackageReferences in .sbproj so it
+	/// auto-mounts on project load. Safe to call multiple times — skips duplicates.
+	/// </summary>
+	public static void AddPackageReference( string ident )
+	{
+		try
+		{
+			var projectPath = Project.Current?.GetProjectFile();
+			if ( projectPath is null ) return;
+
+			var json = System.IO.File.ReadAllText( projectPath );
+			var doc = System.Text.Json.JsonDocument.Parse( json );
+
+			// Check if already present
+			if ( doc.RootElement.TryGetProperty( "PackageReferences", out var refs ) )
+			{
+				foreach ( var item in refs.EnumerateArray() )
+				{
+					if ( item.GetString() == ident )
+						return; // already referenced
+				}
+			}
+
+			// Re-serialize with the new reference added
+			var node = System.Text.Json.Nodes.JsonNode.Parse( json );
+			var arr = node["PackageReferences"]?.AsArray();
+			if ( arr is null )
+			{
+				arr = new System.Text.Json.Nodes.JsonArray();
+				node["PackageReferences"] = arr;
+			}
+			arr.Add( ident );
+
+			var options = new System.Text.Json.JsonSerializerOptions { WriteIndented = true };
+			System.IO.File.WriteAllText( projectPath, node.ToJsonString( options ) );
+			Log.Info( $"[MCP Bridge] Added '{ident}' to PackageReferences" );
+		}
+		catch ( Exception ex )
+		{
+			Log.Warning( $"[MCP Bridge] Could not add package reference: {ex.Message}" );
 		}
 	}
 
