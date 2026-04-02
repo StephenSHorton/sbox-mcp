@@ -154,6 +154,85 @@ public static class EditorHandler
 		return Task.FromResult<object>( (object)new { success = false, error = "Screenshot not yet implemented. Use the built-in screenshot_highres console command instead." } );
 	}
 
+	/// <summary>
+	/// editor.play — Start playing the active scene.
+	/// </summary>
+	public static Task<object> HandlePlay( BridgeRequest request )
+	{
+		var session = SceneEditorSession.Active;
+		if ( session is null )
+			throw new InvalidOperationException( "No active editor session." );
+
+		if ( session.IsPlaying )
+			return Task.FromResult<object>( (object)new { success = false, error = "Already playing" } );
+
+		try
+		{
+			var gameScene = Scene.CreateGameScene( session.Scene );
+			session.SetPlaying( gameScene );
+			Log.Info( "[MCP Bridge] editor.play dispatched" );
+			return Task.FromResult<object>( (object)new { success = true, action = "play" } );
+		}
+		catch ( Exception ex )
+		{
+			throw new InvalidOperationException( $"editor.play failed: {ex.Message}", ex );
+		}
+	}
+
+	/// <summary>
+	/// editor.stop — Stop playing the active scene.
+	/// </summary>
+	public static Task<object> HandleStop( BridgeRequest request )
+	{
+		try
+		{
+			SceneEditorSession.Active?.StopPlaying();
+			Log.Info( "[MCP Bridge] editor.stop dispatched" );
+			return Task.FromResult<object>( (object)new { success = true, action = "stop" } );
+		}
+		catch ( Exception ex )
+		{
+			throw new InvalidOperationException( $"editor.stop failed: {ex.Message}", ex );
+		}
+	}
+
+	/// <summary>
+	/// editor.is_playing — Return whether the editor is currently in play mode.
+	/// </summary>
+	public static Task<object> HandleIsPlaying( BridgeRequest request )
+	{
+		var playing = SceneEditorSession.Active?.IsPlaying ?? false;
+		return Task.FromResult<object>( (object)new { playing = playing } );
+	}
+
+	/// <summary>
+	/// editor.scene_info — Return metadata about the currently open scene.
+	/// </summary>
+	public static Task<object> HandleSceneInfo( BridgeRequest request )
+	{
+		var session = SceneEditorSession.Active;
+		if ( session is null )
+			throw new InvalidOperationException( "No active editor session." );
+
+		var scene = session.Scene;
+		return Task.FromResult<object>( (object)new
+		{
+			name            = scene?.Name ?? "",
+			sourcePath      = session.SourcePath ?? "",
+			hasUnsavedChanges = session.IsDirty,
+			isPlaying       = session.IsPlaying,
+		} );
+	}
+
+	/// <summary>
+	/// editor.console_output — Return recent log entries captured by the bridge.
+	/// </summary>
+	public static Task<object> HandleConsoleOutput( BridgeRequest request )
+	{
+		var lines = ConsoleCapture.GetRecent();
+		return Task.FromResult<object>( (object)new { lines = lines } );
+	}
+
 	// -------------------------------------------------------------------------
 	// Hierarchy helpers (used by SceneHandler.HandleHierarchy)
 	// -------------------------------------------------------------------------

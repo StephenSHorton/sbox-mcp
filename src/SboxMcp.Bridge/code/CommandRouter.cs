@@ -14,13 +14,23 @@ public static class CommandRouter
 	private static readonly Dictionary<string, HandlerFunc> Handlers = new()
 	{
 		// Scene commands
-		["scene.list"]          = r => SceneHandler.ListObjects( r ),
-		["scene.get"]           = r => SceneHandler.GetObject( r ),
-		["scene.create"]        = r => SceneHandler.CreateObject( r ),
-		["scene.delete"]        = r => SceneHandler.DeleteObject( r ),
-		["scene.find"]          = r => SceneHandler.FindObjects( r ),
-		["scene.set_transform"] = r => SceneHandler.SetTransform( r ),
-		["scene.hierarchy"]     = r => SceneHandler.GetHierarchy( r ),
+		["scene.list"]             = r => SceneHandler.ListObjects( r ),
+		["scene.get"]              = r => SceneHandler.GetObject( r ),
+		["scene.create"]           = r => SceneHandler.CreateObject( r ),
+		["scene.delete"]           = r => SceneHandler.DeleteObject( r ),
+		["scene.find"]             = r => SceneHandler.FindObjects( r ),
+		["scene.set_transform"]    = r => SceneHandler.SetTransform( r ),
+		["scene.hierarchy"]        = r => SceneHandler.GetHierarchy( r ),
+		["scene.clone"]            = r => SceneHandler.CloneObject( r ),
+		["scene.reparent"]         = r => SceneHandler.ReparentObject( r ),
+		["scene.find_by_component"] = r => SceneHandler.FindByComponent( r ),
+		["scene.find_by_tag"]      = r => SceneHandler.FindByTag( r ),
+		["scene.load"]             = r => SceneHandler.LoadScene( r ),
+
+		// Tag commands
+		["tag.add"]    = r => SceneHandler.TagAdd( r ),
+		["tag.remove"] = r => SceneHandler.TagRemove( r ),
+		["tag.list"]   = r => SceneHandler.TagList( r ),
 
 		// Component commands
 		["component.list"]   = r => ComponentHandler.ListComponents( r ),
@@ -44,6 +54,17 @@ public static class CommandRouter
 		["editor.redo"]          = r => EditorHandler.HandleRedo( r ),
 		["editor.save_scene"]    = r => EditorHandler.HandleSaveScene( r ),
 		["editor.screenshot"]    = r => EditorHandler.HandleScreenshot( r ),
+		["editor.play"]          = r => EditorHandler.HandlePlay( r ),
+		["editor.stop"]          = r => EditorHandler.HandleStop( r ),
+		["editor.is_playing"]    = r => EditorHandler.HandleIsPlaying( r ),
+		["editor.scene_info"]    = r => EditorHandler.HandleSceneInfo( r ),
+		["editor.console_output"] = r => EditorHandler.HandleConsoleOutput( r ),
+
+		// Asset commands
+		["asset.search"]       = r => AssetHandler.SearchAssets( r ),
+		["asset.fetch"]        = r => AssetHandler.FetchAsset( r ),
+		["asset.mount"]        = r => AssetHandler.MountAsset( r ),
+		["asset.browse_local"] = r => AssetHandler.BrowseLocalAssets( r ),
 
 		// Execution commands
 		["execute.csharp"] = r => ExecutionHandler.ExecuteCSharp( r ),

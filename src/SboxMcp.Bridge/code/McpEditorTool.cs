@@ -30,6 +30,8 @@ public class McpBridgeDock : Widget
 	{
 		Current = this;
 
+		ConsoleCapture.EnsureHooked();
+
 		MinimumSize = 200;
 		Layout = Layout.Column();
 		Layout.Margin = 8;

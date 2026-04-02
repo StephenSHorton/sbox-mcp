@@ -79,4 +79,54 @@ public static class EditorTools
             ? response.Data?.ToString() ?? "(empty scene)"
             : $"Error: {response.Error}";
     }
+
+    [McpServerTool(Name = "editor_play")]
+    [Description("Start playing the current scene in the editor")]
+    public static async Task<string> Play(EditorBridgeServer bridge, CancellationToken ct)
+    {
+        var response = await bridge.SendCommandAsync("editor.play", null, ct);
+        return response.Success
+            ? response.Data?.ToString() ?? "Playing."
+            : $"Error: {response.Error}";
+    }
+
+    [McpServerTool(Name = "editor_stop")]
+    [Description("Stop playing the current scene in the editor")]
+    public static async Task<string> Stop(EditorBridgeServer bridge, CancellationToken ct)
+    {
+        var response = await bridge.SendCommandAsync("editor.stop", null, ct);
+        return response.Success
+            ? response.Data?.ToString() ?? "Stopped."
+            : $"Error: {response.Error}";
+    }
+
+    [McpServerTool(Name = "editor_is_playing")]
+    [Description("Check whether the editor is currently in play mode")]
+    public static async Task<string> IsPlaying(EditorBridgeServer bridge, CancellationToken ct)
+    {
+        var response = await bridge.SendCommandAsync("editor.is_playing", null, ct);
+        return response.Success
+            ? response.Data?.ToString() ?? "(empty)"
+            : $"Error: {response.Error}";
+    }
+
+    [McpServerTool(Name = "editor_scene_info")]
+    [Description("Get information about the current scene (name, path, dirty state)")]
+    public static async Task<string> SceneInfo(EditorBridgeServer bridge, CancellationToken ct)
+    {
+        var response = await bridge.SendCommandAsync("editor.scene_info", null, ct);
+        return response.Success
+            ? response.Data?.ToString() ?? "(empty)"
+            : $"Error: {response.Error}";
+    }
+
+    [McpServerTool(Name = "editor_console_output")]
+    [Description("Get recent console output from the s&box editor")]
+    public static async Task<string> ConsoleOutput(EditorBridgeServer bridge, CancellationToken ct)
+    {
+        var response = await bridge.SendCommandAsync("editor.console_output", null, ct);
+        return response.Success
+            ? response.Data?.ToString() ?? "(no output)"
+            : $"Error: {response.Error}";
+    }
 }

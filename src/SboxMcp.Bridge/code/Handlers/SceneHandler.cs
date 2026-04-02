@@ -124,6 +124,181 @@ public static class SceneHandler
 	}
 
 	/// <summary>
+	/// scene.clone — Clone a GameObject by ID.
+	/// Params: { "id": "guid-string" }
+	/// </summary>
+	public static Task<object> CloneObject( BridgeRequest request )
+	{
+		var id = GetParam( request, "id" );
+		if ( !Guid.TryParse( id, out var guid ) )
+			throw new ArgumentException( $"Invalid GUID: {id}" );
+
+		var go = FindObjectById( guid );
+		if ( go is null )
+			throw new KeyNotFoundException( $"GameObject not found: {id}" );
+
+		var clone = go.Clone();
+		clone.Name = go.Name + " (Clone)";
+
+		Log.Info( $"[MCP Bridge] Cloned '{go.Name}' -> '{clone.Name}' ({clone.Id})" );
+		return Task.FromResult<object>( SerializeGameObjectShallow( clone ) );
+	}
+
+	/// <summary>
+	/// scene.reparent — Re-parent a GameObject under another.
+	/// Params: { "id": "guid", "parentId": "guid" }
+	/// </summary>
+	public static Task<object> ReparentObject( BridgeRequest request )
+	{
+		var id       = GetParam( request, "id" );
+		var parentId = GetParam( request, "parentId" );
+
+		if ( !Guid.TryParse( id, out var guid ) )
+			throw new ArgumentException( $"Invalid GUID: {id}" );
+		if ( !Guid.TryParse( parentId, out var parentGuid ) )
+			throw new ArgumentException( $"Invalid GUID for parentId: {parentId}" );
+
+		var go     = FindObjectById( guid );
+		var parent = FindObjectById( parentGuid );
+
+		if ( go is null )
+			throw new KeyNotFoundException( $"GameObject not found: {id}" );
+		if ( parent is null )
+			throw new KeyNotFoundException( $"Parent GameObject not found: {parentId}" );
+
+		go.SetParent( parent );
+
+		Log.Info( $"[MCP Bridge] Reparented '{go.Name}' under '{parent.Name}'" );
+		return Task.FromResult<object>( SerializeGameObjectShallow( go ) );
+	}
+
+	/// <summary>
+	/// scene.find_by_component — Find GameObjects that have a component of the given type.
+	/// Params: { "type": "TypeName" }
+	/// </summary>
+	public static Task<object> FindByComponent( BridgeRequest request )
+	{
+		var typeName = GetParam( request, "type" );
+		var scene    = GetActiveScene();
+
+		var results = new List<object>();
+		foreach ( var go in EnumerateAll( scene ) )
+		{
+			foreach ( var comp in go.Components.GetAll() )
+			{
+				if ( comp.GetType().Name.Equals( typeName, StringComparison.OrdinalIgnoreCase ) )
+				{
+					results.Add( SerializeGameObjectShallow( go ) );
+					break;
+				}
+			}
+		}
+
+		return Task.FromResult<object>( results );
+	}
+
+	/// <summary>
+	/// scene.find_by_tag — Find GameObjects that have a specific tag.
+	/// Params: { "tag": "tagName" }
+	/// </summary>
+	public static Task<object> FindByTag( BridgeRequest request )
+	{
+		var tag   = GetParam( request, "tag" );
+		var scene = GetActiveScene();
+
+		var results = new List<object>();
+		foreach ( var go in EnumerateAll( scene ) )
+		{
+			if ( go.Tags.Has( tag ) )
+				results.Add( SerializeGameObjectShallow( go ) );
+		}
+
+		return Task.FromResult<object>( results );
+	}
+
+	/// <summary>
+	/// tag.add — Add a tag to a GameObject.
+	/// Params: { "id": "guid", "tag": "tagName" }
+	/// </summary>
+	public static Task<object> TagAdd( BridgeRequest request )
+	{
+		var id  = GetParam( request, "id" );
+		var tag = GetParam( request, "tag" );
+
+		if ( !Guid.TryParse( id, out var guid ) )
+			throw new ArgumentException( $"Invalid GUID: {id}" );
+
+		var go = FindObjectById( guid );
+		if ( go is null )
+			throw new KeyNotFoundException( $"GameObject not found: {id}" );
+
+		go.Tags.Add( tag );
+
+		Log.Info( $"[MCP Bridge] Added tag '{tag}' to '{go.Name}'" );
+		return Task.FromResult<object>( (object)new { tags = GetTagList( go ) } );
+	}
+
+	/// <summary>
+	/// tag.remove — Remove a tag from a GameObject.
+	/// Params: { "id": "guid", "tag": "tagName" }
+	/// </summary>
+	public static Task<object> TagRemove( BridgeRequest request )
+	{
+		var id  = GetParam( request, "id" );
+		var tag = GetParam( request, "tag" );
+
+		if ( !Guid.TryParse( id, out var guid ) )
+			throw new ArgumentException( $"Invalid GUID: {id}" );
+
+		var go = FindObjectById( guid );
+		if ( go is null )
+			throw new KeyNotFoundException( $"GameObject not found: {id}" );
+
+		go.Tags.Remove( tag );
+
+		Log.Info( $"[MCP Bridge] Removed tag '{tag}' from '{go.Name}'" );
+		return Task.FromResult<object>( (object)new { tags = GetTagList( go ) } );
+	}
+
+	/// <summary>
+	/// tag.list — List all tags on a GameObject.
+	/// Params: { "id": "guid" }
+	/// </summary>
+	public static Task<object> TagList( BridgeRequest request )
+	{
+		var id = GetParam( request, "id" );
+
+		if ( !Guid.TryParse( id, out var guid ) )
+			throw new ArgumentException( $"Invalid GUID: {id}" );
+
+		var go = FindObjectById( guid );
+		if ( go is null )
+			throw new KeyNotFoundException( $"GameObject not found: {id}" );
+
+		return Task.FromResult<object>( (object)new { tags = GetTagList( go ) } );
+	}
+
+	/// <summary>
+	/// scene.load — Open a scene file in the editor.
+	/// Params: { "path": "path/to/scene.scene" }
+	/// </summary>
+	public static Task<object> LoadScene( BridgeRequest request )
+	{
+		var path = GetParam( request, "path" );
+
+		try
+		{
+			SceneEditorSession.CreateFromPath( path );
+			Log.Info( $"[MCP Bridge] scene.load '{path}'" );
+			return Task.FromResult<object>( (object)new { loaded = true, path = path } );
+		}
+		catch ( Exception ex )
+		{
+			throw new InvalidOperationException( $"scene.load failed: {ex.Message}", ex );
+		}
+	}
+
+	/// <summary>
 	/// scene.set_transform — Set position/rotation/scale on a GameObject.
 	/// Params: { "id": "guid", "position"?: "x,y,z", "rotation"?: "x,y,z", "scale"?: "x,y,z" }
 	/// </summary>
@@ -289,6 +464,18 @@ public static class SceneHandler
 		if ( pattern.EndsWith( "*" ) )
 			return name.StartsWith( pattern.TrimEnd( '*' ), StringComparison.OrdinalIgnoreCase );
 		return string.Equals( name, pattern, StringComparison.OrdinalIgnoreCase );
+	}
+
+	/// <summary>
+	/// Returns the tag set for a GameObject as a plain string list.
+	/// TagSet implements IEnumerable&lt;string&gt; in s&box.
+	/// </summary>
+	private static List<string> GetTagList( GameObject go )
+	{
+		var list = new List<string>();
+		foreach ( var tag in go.Tags )
+			list.Add( tag );
+		return list;
 	}
 
 	// -------------------------------------------------------------------------
