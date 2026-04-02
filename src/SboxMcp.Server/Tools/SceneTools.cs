@@ -24,7 +24,7 @@ public static class SceneTools
         [Description("The ID of the GameObject to retrieve")] string objectId,
         CancellationToken ct)
     {
-        var response = await bridge.SendCommandAsync("scene.get", new { objectId }, ct);
+        var response = await bridge.SendCommandAsync("scene.get", new { id = objectId }, ct);
         return response.Success
             ? response.Data?.ToString() ?? "(empty)"
             : $"Error: {response.Error}";
@@ -52,7 +52,7 @@ public static class SceneTools
         [Description("The ID of the GameObject to delete")] string objectId,
         CancellationToken ct)
     {
-        var response = await bridge.SendCommandAsync("scene.delete", new { objectId }, ct);
+        var response = await bridge.SendCommandAsync("scene.delete", new { id = objectId }, ct);
         return response.Success
             ? response.Data?.ToString() ?? "Deleted."
             : $"Error: {response.Error}";
@@ -65,7 +65,7 @@ public static class SceneTools
         [Description("Search query, supports * wildcards")] string query,
         CancellationToken ct)
     {
-        var response = await bridge.SendCommandAsync("scene.find", new { query }, ct);
+        var response = await bridge.SendCommandAsync("scene.find", new { pattern = query }, ct);
         return response.Success
             ? response.Data?.ToString() ?? "(no results)"
             : $"Error: {response.Error}";
@@ -81,7 +81,7 @@ public static class SceneTools
         [Description("Optional scale as \"x,y,z\" string")] string? scale,
         CancellationToken ct)
     {
-        var response = await bridge.SendCommandAsync("scene.set_transform", new { objectId, position, rotation, scale }, ct);
+        var response = await bridge.SendCommandAsync("scene.set_transform", new { id = objectId, position, rotation, scale }, ct);
         return response.Success
             ? response.Data?.ToString() ?? "Transform updated."
             : $"Error: {response.Error}";

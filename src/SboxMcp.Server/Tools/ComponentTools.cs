@@ -14,7 +14,7 @@ public static class ComponentTools
         [Description("The ID of the GameObject")] string objectId,
         CancellationToken ct)
     {
-        var response = await bridge.SendCommandAsync("component.list", new { objectId }, ct);
+        var response = await bridge.SendCommandAsync("component.list", new { id = objectId }, ct);
         return response.Success
             ? response.Data?.ToString() ?? "(no components)"
             : $"Error: {response.Error}";
@@ -28,7 +28,7 @@ public static class ComponentTools
         [Description("The component type name")] string componentType,
         CancellationToken ct)
     {
-        var response = await bridge.SendCommandAsync("component.get", new { objectId, componentType }, ct);
+        var response = await bridge.SendCommandAsync("component.get", new { id = objectId, type = componentType }, ct);
         return response.Success
             ? response.Data?.ToString() ?? "(empty)"
             : $"Error: {response.Error}";
@@ -44,7 +44,7 @@ public static class ComponentTools
         [Description("The value to assign")] string value,
         CancellationToken ct)
     {
-        var response = await bridge.SendCommandAsync("component.set", new { objectId, componentType, property, value }, ct);
+        var response = await bridge.SendCommandAsync("component.set", new { id = objectId, type = componentType, property, value }, ct);
         return response.Success
             ? response.Data?.ToString() ?? "Property updated."
             : $"Error: {response.Error}";
@@ -58,7 +58,7 @@ public static class ComponentTools
         [Description("The component type name to add")] string componentType,
         CancellationToken ct)
     {
-        var response = await bridge.SendCommandAsync("component.add", new { objectId, componentType }, ct);
+        var response = await bridge.SendCommandAsync("component.add", new { id = objectId, type = componentType }, ct);
         return response.Success
             ? response.Data?.ToString() ?? "Component added."
             : $"Error: {response.Error}";
@@ -72,7 +72,7 @@ public static class ComponentTools
         [Description("The component type name to remove")] string componentType,
         CancellationToken ct)
     {
-        var response = await bridge.SendCommandAsync("component.remove", new { objectId, componentType }, ct);
+        var response = await bridge.SendCommandAsync("component.remove", new { id = objectId, type = componentType }, ct);
         return response.Success
             ? response.Data?.ToString() ?? "Component removed."
             : $"Error: {response.Error}";
