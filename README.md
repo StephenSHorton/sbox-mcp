@@ -44,16 +44,47 @@ The MCP Server exposes tools over **stdio** (consumed by AI clients like Claude 
 
 ## Prerequisites
 
-- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
 - [s&box editor](https://sbox.game) (for the Bridge Addon)
+- [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0) — **only if building from source.** The prebuilt release is self-contained.
 
 ---
 
 ## Setup
 
-### 1. MCP Server
+### Quick Install (Recommended)
 
-Clone the repository and build the server:
+1. Download the latest `sbox-mcp-<version>-win-x64.zip` from the [Releases page](https://github.com/StephenSHorton/sbox-mcp/releases/latest).
+2. Extract it somewhere stable (e.g. `C:\Tools\sbox-mcp\`). The zip contains:
+   - `SboxMcp.Server.exe` — the self-contained MCP server (no .NET runtime required).
+   - `bridge/` — the editor addon source files.
+3. Register the MCP server with your client:
+
+   **Claude Code:**
+   ```bash
+   claude mcp add -s user sbox -- "C:\Tools\sbox-mcp\SboxMcp.Server.exe"
+   ```
+
+   **Claude Desktop / Other MCP Clients:**
+   ```json
+   {
+     "mcpServers": {
+       "sbox": {
+         "command": "C:\\Tools\\sbox-mcp\\SboxMcp.Server.exe"
+       }
+     }
+   }
+   ```
+
+4. Copy the bridge addon into your s&box install:
+   ```bash
+   cp -r bridge/* "<sbox-install>/addons/tools/Code/McpBridge/"
+   ```
+
+The addon starts automatically when the s&box editor opens. A dockable **MCP Bridge** panel shows connection status, command count, and activity log.
+
+### Build from Source
+
+If you want to build from source instead, you'll need the [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0):
 
 ```bash
 git clone https://github.com/StephenSHorton/sbox-mcp.git
@@ -61,38 +92,17 @@ cd sbox-mcp
 dotnet build sbox-mcp.sln --configuration Release
 ```
 
-#### Claude Code
+Then register the server with `dotnet run`:
 
 ```bash
 claude mcp add -s user sbox -- dotnet run --project /path/to/src/SboxMcp.Server -c Release
 ```
 
-#### Claude Desktop / Other MCP Clients
-
-Add to your MCP configuration:
-
-```json
-{
-  "mcpServers": {
-    "sbox": {
-      "command": "dotnet",
-      "args": ["run", "--project", "path/to/src/SboxMcp.Server", "-c", "Release"]
-    }
-  }
-}
-```
-
-Replace the path with the absolute path to `src/SboxMcp.Server` on your machine.
-
-### 2. s&box Bridge Addon
-
-Copy the bridge code into your s&box tools addon directory:
+And copy the bridge into your s&box install:
 
 ```bash
 cp -r src/SboxMcp.Bridge/code/* "<sbox-install>/addons/tools/Code/McpBridge/"
 ```
-
-The addon starts automatically when the s&box editor opens. A dockable **MCP Bridge** panel shows connection status, command count, and activity log.
 
 ---
 

@@ -1,0 +1,58 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET 9
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Resolve version from tag
+        id: version
+        run: echo "version=${GITHUB_REF_NAME#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Publish self-contained server (win-x64)
+        run: |
+          dotnet publish src/SboxMcp.Server/SboxMcp.Server.csproj \
+            -c Release \
+            -r win-x64 \
+            --self-contained true \
+            -p:PublishSingleFile=true \
+            -p:IncludeNativeLibrariesForSelfExtract=true \
+            -p:DebugType=None \
+            -p:DebugSymbols=false \
+            -p:Version=${{ steps.version.outputs.version }} \
+            -o publish/
+
+      - name: Stage release bundle
+        run: |
+          mkdir -p bundle/bridge
+          cp publish/SboxMcp.Server.exe bundle/
+          cp -r src/SboxMcp.Bridge/code/. bundle/bridge/
+          cp README.md LICENSE bundle/
+
+      - name: Zip bundle
+        run: |
+          cd bundle
+          zip -r ../sbox-mcp-${{ steps.version.outputs.version }}-win-x64.zip .
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: sbox-mcp-${{ steps.version.outputs.version }}-win-x64.zip
+          generate_release_notes: true
+          draft: false
+          prerelease: false
