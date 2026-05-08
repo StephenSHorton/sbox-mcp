@@ -17,12 +17,12 @@ public class McpBridgeDock : Widget
 	private const int MaxLogEntries = 50;
 	private DateTime _connectedAt;
 
-	private Label _statusDot;
-	private Label _statusText;
-	private Label _urlLabel;
+	private Editor.Label _statusDot;
+	private Editor.Label _statusText;
+	private Editor.Label _urlLabel;
 	private Button _connectButton;
-	private Label _commandCountLabel;
-	private Label _uptimeLabel;
+	private Editor.Label _commandCountLabel;
+	private Editor.Label _uptimeLabel;
 	private Layout _logLayout;
 	private LineEdit _portField;
 
@@ -50,17 +50,17 @@ public class McpBridgeDock : Widget
 		var header = Layout.AddRow();
 		header.Spacing = 6;
 
-		_statusDot = new Label( "●", this );
+		_statusDot = new Editor.Label( "●", this );
 		_statusDot.SetStyles( "color: #e05252; font-size: 18px;" );
 		header.Add( _statusDot );
 
 		var textCol = header.AddColumn();
 		textCol.Spacing = 2;
 
-		_statusText = new Label( "Disconnected", this );
+		_statusText = new Editor.Label( "Disconnected", this );
 		textCol.Add( _statusText );
 
-		_urlLabel = new Label( $"ws://localhost:{_port}", this );
+		_urlLabel = new Editor.Label( $"ws://localhost:{_port}", this );
 		_urlLabel.SetStyles( "color: #888888; font-size: 11px;" );
 		textCol.Add( _urlLabel );
 
@@ -72,7 +72,7 @@ public class McpBridgeDock : Widget
 		var row = Layout.AddRow();
 		row.Spacing = 6;
 
-		var portLabel = new Label( "Port:", this );
+		var portLabel = new Editor.Label( "Port:", this );
 		row.Add( portLabel );
 
 		_portField = new LineEdit( this );
@@ -111,15 +111,15 @@ public class McpBridgeDock : Widget
 
 		var cmdCol = statsRow.AddColumn();
 		cmdCol.Spacing = 2;
-		cmdCol.Add( new Label( "Commands", this ) );
-		_commandCountLabel = new Label( "0", this );
+		cmdCol.Add( new Editor.Label( "Commands", this ) );
+		_commandCountLabel = new Editor.Label( "0", this );
 		_commandCountLabel.SetStyles( "font-size: 18px; font-weight: bold;" );
 		cmdCol.Add( _commandCountLabel );
 
 		var uptimeCol = statsRow.AddColumn();
 		uptimeCol.Spacing = 2;
-		uptimeCol.Add( new Label( "Uptime", this ) );
-		_uptimeLabel = new Label( "--", this );
+		uptimeCol.Add( new Editor.Label( "Uptime", this ) );
+		_uptimeLabel = new Editor.Label( "--", this );
 		_uptimeLabel.SetStyles( "font-size: 18px; font-weight: bold;" );
 		uptimeCol.Add( _uptimeLabel );
 
@@ -128,7 +128,7 @@ public class McpBridgeDock : Widget
 
 	private void BuildLog()
 	{
-		Layout.Add( new Label( "Activity Log", this ) );
+		Layout.Add( new Editor.Label( "Activity Log", this ) );
 
 		var scroll = new ScrollArea( this );
 		scroll.Canvas = new Widget( this );
@@ -185,7 +185,7 @@ public class McpBridgeDock : Widget
 		_logLayout.Clear( true );
 		foreach ( var e in _logEntries )
 		{
-			var lbl = new Label( e, this );
+			var lbl = new Editor.Label( e, this );
 			lbl.SetStyles( "font-size: 11px;" );
 			_logLayout.Add( lbl );
 		}
