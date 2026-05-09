@@ -5,6 +5,7 @@
 # sbox-mcp — MCP Server for s&box
 
 [![Build](https://github.com/StephenSHorton/sbox-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/StephenSHorton/sbox-mcp/actions/workflows/build.yml)
+[![Release](https://img.shields.io/github/v/release/StephenSHorton/sbox-mcp)](https://github.com/StephenSHorton/sbox-mcp/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![s&box](https://img.shields.io/badge/s%26box-editor-blue)](https://sbox.game)
 
