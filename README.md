@@ -55,14 +55,14 @@ The MCP Server exposes tools over **stdio** (consumed by AI clients like Claude 
 ### Quick Install (Recommended)
 
 1. Download the latest `sbox-mcp-<version>-win-x64.zip` from the [Releases page](https://github.com/StephenSHorton/sbox-mcp/releases/latest).
-2. Extract it somewhere stable (e.g. `C:\Tools\sbox-mcp\`). The zip contains:
+2. Extract it anywhere you like — just pick a stable location you won't move. The zip contains:
    - `SboxMcp.Server.exe` — the self-contained MCP server (no .NET runtime required).
    - `bridge/` — the editor addon source files.
-3. Register the MCP server with your client:
+3. Register the MCP server with your client (replace `<install-dir>` with wherever you extracted the zip):
 
    **Claude Code:**
    ```bash
-   claude mcp add -s user sbox -- "C:\Tools\sbox-mcp\SboxMcp.Server.exe"
+   claude mcp add -s user sbox -- "<install-dir>\SboxMcp.Server.exe"
    ```
 
    **Claude Desktop / Other MCP Clients:**
@@ -70,7 +70,7 @@ The MCP Server exposes tools over **stdio** (consumed by AI clients like Claude 
    {
      "mcpServers": {
        "sbox": {
-         "command": "C:\\Tools\\sbox-mcp\\SboxMcp.Server.exe"
+         "command": "<install-dir>\\SboxMcp.Server.exe"
        }
      }
    }
