@@ -168,10 +168,11 @@ public static class EditorHandler
 
 		try
 		{
-			// SetPlaying requires a game scene — create one from the editor scene
-			var gameScene = Scene.CreateEditorScene();
-			gameScene.Load( session.Scene.Source );
-			session.SetPlaying( gameScene );
+			// EditorScene.Play() runs the same flow the F5 hotkey / "Play" menu uses:
+			// fires scene.startplay, calls IGameInstanceDll.EditorPlay() to switch the
+			// viewport, then SetPlaying. Calling SetPlaying() ourselves only flips the
+			// internal flag — the editor UI never switches and nothing visible happens.
+			EditorScene.Play();
 			Log.Info( "[MCP Bridge] editor.play dispatched" );
 			return Task.FromResult<object>( (object)new { success = true, action = "play" } );
 		}
@@ -188,7 +189,7 @@ public static class EditorHandler
 	{
 		try
 		{
-			SceneEditorSession.Active?.StopPlaying();
+			EditorScene.Stop();
 			Log.Info( "[MCP Bridge] editor.stop dispatched" );
 			return Task.FromResult<object>( (object)new { success = true, action = "stop" } );
 		}
