@@ -4,12 +4,23 @@
 
 # sbox-mcp — MCP Server for s&box
 
+> **Archived.** s&box now ships a first-party editor MCP server. Use that instead of this project.
+>
+> - Docs: [s&box MCP Server](https://sbox.game/dev/doc/editor/mcp-server)
+> - Connect Claude Code: `claude mcp add --transport http sbox http://127.0.0.1:7269/mcp`
+> - Enable/configure: **Editor → Preferences → MCP Server**
+>
+> Need something the built-in tools don't cover? Add custom tools with `[McpTool]` / `[McpToolset]` in an editor addon — no separate bridge process required.
+
 [![Build](https://github.com/StephenSHorton/sbox-mcp/actions/workflows/build.yml/badge.svg)](https://github.com/StephenSHorton/sbox-mcp/actions/workflows/build.yml)
 [![Release](https://img.shields.io/github/v/release/StephenSHorton/sbox-mcp)](https://github.com/StephenSHorton/sbox-mcp/releases/latest)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![s&box](https://img.shields.io/badge/s%26box-editor-blue)](https://sbox.game)
+[![Status](https://img.shields.io/badge/status-archived-lightgrey)](https://sbox.game/dev/doc/editor/mcp-server)
 
 AI-powered editor automation for the s&box game engine via the Model Context Protocol.
+
+> Historical reference only. The sections below describe this community bridge as it last shipped; they are not maintained.
 
 ---
 
